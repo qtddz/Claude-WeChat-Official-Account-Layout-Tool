@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude风格公众号排版工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== Design System =====
+   Claude风格 = 温暖克制 + 内容优先 + 衬线标题配无衬线正文
+   色彩来自 Anthropic 品牌气质：暖米白底 + 深炭黑字 + 赤陶橙强调
+*/
+
+:root {
+  /* 核心色板 - oklch定义保证和谐 */
+  --bg-primary: #FAF8F5;
+  --bg-secondary: #F3F0EB;
+  --bg-tertiary: #EBE7E0;
+  --bg-code: #1E1E1E;
+  --bg-card: #FFFFFF;
+
+  --text-primary: #1A1A1A;
+  --text-secondary: #4A4A4A;
+  --text-tertiary: #7A7A7A;
+  --text-muted: #9A9A9A;
+  --text-inverse: #FAF8F5;
+
+  --accent: #C04A1A;           /* 赤陶橙 - Anthropic气质 */
+  --accent-light: #E07A4E;
+  --accent-subtle: rgba(192, 74, 26, 0.08);
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-light: rgba(0, 0, 0, 0.05);
+
+  /* 字体 */
+  --font-display: 'Newsreader', 'Instrument Serif', 'Noto Serif SC', Georgia, serif;
+  --font-body: -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  /* 间距 - 8px base */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+
+  /* 文章排版参数 */
+  --article-max-width: 680px;
+  --article-padding: 40px;
+  --line-height-body: 1.85;
+  --line-height-heading: 1.25;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== 顶部工具栏 ===== */
+.toolbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-xl);
+  z-index: 100;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.toolbar-logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.toolbar-logo span {
+  color: var(--accent);
+  font-style: italic;
+}
+
+.toolbar-tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.btn {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.btn-primary {
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  border-color: var(--text-primary);
+}
+
+.btn-primary:hover {
+  background: #333;
+  border-color: #333;
+}
+
+.btn-success {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.btn-success:hover {
+  background: #A84015;
+  border-color: #A84015;
+}
+
+/* ===== 主体布局 ===== */
+.main {
+  display: flex;
+  height: 100vh;
+  padding-top: 56px;
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-divider {
+  width: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.panel-header {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-lg);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ===== 输入区 ===== */
+#markdown-input {
+  flex: 1;
+  width: 100%;
+  padding: var(--space-lg);
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  tab-size: 2;
+}
+
+#markdown-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ===== 预览区 ===== */
+#preview-container {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-secondary);
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2xl) var(--space-lg);
+}
+
+/* ===== 文章样式 - Claude风格核心 ===== */
+.article {
+  max-width: var(--article-max-width);
+  width: 100%;
+  padding: var(--space-3xl) var(--article-padding);
+}
+
+.article h1 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: var(--line-height-heading);
+  color: var(--text-primary);
+  margin-bottom: var(--space-lg);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.article h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: var(--line-height-heading);
+  color: var(--text-primary);
+  margin-top: var(--space-3xl);
+  margin-bottom: var(--space-md);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.article h3 {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  margin-top: var(--space-2xl);
+  margin-bottom: var(--space-sm);
+}
+
+.article h4 {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-xs);
+}
+
+.article p {
+  font-size: 16px;
+  line-height: var(--line-height-body);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+  text-wrap: pretty;
+}
+
+.article p:last-child {
+  margin-bottom: 0;
+}
+
+/* 引用块 */
+.article blockquote {
+  margin: var(--space-xl) 0;
+  padding: var(--space-md) var(--space-lg);
+  padding-left: var(--space-lg);
+  border-left: 3px solid var(--accent);
+  background: var(--accent-subtle);
+  border-radius: 0 8px 8px 0;
+}
+
+.article blockquote p {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-style: italic;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+  line-height: 1.7;
+}
+
+.article blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.article blockquote cite {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-style: normal;
+  color: var(--text-tertiary);
+  margin-top: var(--space-sm);
+}
+
+.article blockquote cite::before {
+  content: "\2014 \2009";
+}
+
+/* 列表 */
+.article ul, .article ol {
+  margin: var(--space-lg) 0;
+  padding-left: var(--space-xl);
+}
+
+.article li {
+  font-size: 16px;
+  line-height: var(--line-height-body);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+  text-wrap: pretty;
+}
+
+.article ul li::marker {
+  color: var(--accent);
+}
+
+.article ol li::marker {
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+/* 代码 */
+.article code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.article pre {
+  background: var(--bg-code);
+  border-radius: 10px;
+  padding: var(--space-lg);
+  margin: var(--space-xl) 0;
+  overflow-x: auto;
+  position: relative;
+}
+
+.article pre::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-md);
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.article pre code {
+  background: none;
+  padding: 0;
+  color: #D4D4D4;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+/* 代码语法高亮 - 简约风格 */
+.article pre .keyword { color: #C586C0; }
+.article pre .string  { color: #CE9178; }
+.article pre .number  { color: #B5CEA8; }
+.article pre .comment { color: #6A9955; }
+.article pre .function { color: #DCDCAA; }
+.article pre .operator { color: #D4D4D4; }
+
+/* 分割线 */
+.article hr {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-3xl) auto;
+  width: 60%;
+}
+
+/* 表格 */
+.article table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--space-xl) 0;
+  font-size: 14px;
+}
+
+.article th {
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 2px solid var(--border);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.article td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.article tr:hover td {
+  background: var(--bg-secondary);
+}
+
+/* 链接 */
+.article a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.article a:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* 图片 */
+.article img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: var(--space-xl) 0;
+  display: block;
+}
+
+/* 强调 */
+.article strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.article em {
+  font-style: italic;
+  font-family: var(--font-display);
+}
+
+/* 删除线 */
+.article del {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* 任务列表 */
+.article input[type="checkbox"] {
+  margin-right: var(--space-sm);
+  accent-color: var(--accent);
+}
+
+/* ===== Toast 提示 ===== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 200;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 960px) {
+  .main { flex-direction: column; }
+  .panel-divider { width: 100%; height: 1px; }
+  .article { padding: var(--space-xl) var(--space-lg); }
+  .article h1 { font-size: 28px; }
+  .article h2 { font-size: 22px; }
+  .toolbar { padding: 0 var(--space-md); }
+}
+
+/* ===== 滚动条美化 ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+</style>
+</head>
+<body>
+
+<!-- 顶部工具栏 -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="toolbar-logo">Claude<span>排版</span></div>
+    <div class="toolbar-tag">公众号排版工具</div>
+  </div>
+  <div class="toolbar-right">
+    <button class="btn" onclick="loadDemo()">加载示例</button>
+    <button class="btn" onclick="clearAll()">清空</button>
+    <button class="btn btn-primary" onclick="copyHTML()">复制HTML</button>
+  </div>
+</div>
+
+<!-- 主体 -->
+<div class="main">
+  <!-- 左侧输入 -->
+  <div class="panel">
+    <div class="panel-header">Markdown 输入</div>
+    <textarea id="markdown-input" placeholder="在这里粘贴你的 Markdown 内容...
+
+支持：
+- 标题、段落、列表
+- 引用块、代码块
+- 表格、图片、链接
+- 任务列表"></textarea>
+  </div>
+
+  <div class="panel-divider"></div>
+
+  <!-- 右侧预览 -->
+  <div class="panel">
+    <div class="panel-header">Claude 风格预览</div>
+    <div id="preview-container">
+      <article class="article" id="article-preview">
+        <p style="color:var(--text-muted);text-align:center;padding:var(--space-3xl) 0;">在左侧输入 Markdown，这里将实时预览...</p>
+      </article>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Markdown 解析器 =====
+// 轻量级实现，覆盖常用语法
+
+const input = document.getElementById('markdown-input');
+const preview = document.getElementById('article-preview');
+
+// 实时渲染
+input.addEventListener('input', () => {
+  preview.innerHTML = parseMarkdown(input.value);
+});
+
+function wrapListItems(html) {
+  // 将连续的 li 按类型包裹为 ol/ul，并清理 data-type 属性
+  const lines = html.split('\n');
+  const result = [];
+  let buffer = [];
+  let currentType = null; // 'ol', 'ul', 'task'
+
+  function flushBuffer() {
+    if (buffer.length === 0) return;
+    const tag = currentType === 'ol' ? 'ol' : 'ul';
+    let content = buffer.join('\n');
+    if (currentType === 'ol') {
+      // 去掉有序列表的数字前缀
+      content = content.replace(/<li data-type="ol">\d+\.\s/g, '<li>');
+    } else {
+      // 去掉 data-type 属性
+      content = content.replace(/<li data-type="[^"]+"/g, '<li');
+    }
+    result.push('<' + tag + '>' + content + '</' + tag + '>');
+    buffer = [];
+  }
+
+  for (let line of lines) {
+    const liMatch = line.match(/^\s*<li data-type="(ol|ul|task|task-checked)"/);
+    if (liMatch) {
+      const type = liMatch[1].startsWith('task') ? 'task' : liMatch[1];
+      if (buffer.length > 0 && currentType !== type && !(currentType === 'task' && type === 'task-checked') && !(currentType === 'task-checked' && type === 'task')) {
+        flushBuffer();
+      }
+      currentType = type;
+      buffer.push(line);
+    } else {
+      flushBuffer();
+      currentType = null;
+      result.push(line);
+    }
+  }
+  flushBuffer();
+  return result.join('\n');
+}
+
+function parseMarkdown(md) {
+  if (!md.trim()) {
+    return '<p style="color:var(--text-muted);text-align:center;padding:var(--space-3xl) 0;">在左侧输入 Markdown，这里将实时预览...</p>';
+  }
+
+  let html = md;
+
+  // 转义HTML
+  html = html.replace(/&/g, '&amp;');
+
+  // 代码块（必须先处理，防止内部内容被解析）
+  const codeBlocks = [];
+  // 支持 ``` 和 ~~~ 两种代码块分隔符
+  html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+    const id = codeBlocks.length;
+    codeBlocks.push({ lang: lang || '', code: escapeCode(code.trimEnd()) });
+    return `\n<!--CODEBLOCK_${id}-->\n`;
+  });
+  html = html.replace(/~~~(\w+)?\n([\s\S]*?)~~~/g, (match, lang, code) => {
+    const id = codeBlocks.length;
+    codeBlocks.push({ lang: lang || '', code: escapeCode(code.trimEnd()) });
+    return `\n<!--CODEBLOCK_${id}-->\n`;
+  });
+
+  // 行内代码
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // 标题
+  html = html.replace(/^###### (.*$)/gim, '<h6>$1</h6>');
+  html = html.replace(/^##### (.*$)/gim, '<h5>$1</h5>');
+  html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+  // 粗体、斜体、删除线
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+  // 图片
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+  // 链接
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+  // 水平线
+  html = html.replace(/^(\*{3,}|-{3,}|_{3,})$/gm, '<hr>');
+
+  // 引用块
+  html = html.replace(/^> (.*$)/gim, '<blockquote><p>$1</p></blockquote>');
+  // 合并连续引用
+  html = html.replace(/<\/blockquote>\s*<blockquote>/g, '');
+  // 引用内换行
+  html = html.replace(/<blockquote><p>(.+?)\n(.*?<\/p><\/blockquote>)/g, '<blockquote><p>$1<br>$2');
+
+  // 表格
+  html = parseTables(html);
+
+  // 任务列表（必须先于其他列表处理）
+  html = html.replace(/^- \[x\] (.+$)/gim, '<li data-type="task-checked"><input type="checkbox" checked disabled> $1</li>');
+  html = html.replace(/^- \[ \] (.+$)/gim, '<li data-type="task"><input type="checkbox" disabled> $1</li>');
+
+  // 有序列表
+  html = html.replace(/^(\d+\.\s.+)$/gm, '<li data-type="ol">$1</li>');
+
+  // 无序列表
+  html = html.replace(/^[-\*+] (.+$)/gim, '<li data-type="ul">$1</li>');
+
+  // 包裹连续 li：同类型合并，有序列表去掉数字前缀
+  html = wrapListItems(html);
+
+  // 段落
+  const lines = html.split('\n');
+  const result = [];
+  let inParagraph = false;
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    const isBlock = /^<(h[1-6]|blockquote|pre|ul|ol|table|hr|img|li|!--)/i.test(trimmed);
+
+    if (isBlock || trimmed === '') {
+      if (inParagraph) {
+        result.push('</p>');
+        inParagraph = false;
+      }
+      if (trimmed !== '') result.push(line);
+    } else {
+      if (!inParagraph) {
+        result.push('<p>');
+        inParagraph = true;
+      }
+      result.push(line + (inParagraph ? '<br>' : ''));
+    }
+  }
+  if (inParagraph) result.push('</p>');
+  html = result.join('\n');
+
+  // 清理段落内的多余br
+  html = html.replace(/<p>(.*?)<\/p>/gs, (match, content) => {
+    const cleaned = content.replace(/<br>\s*<\/p>/g, '</p>').replace(/<br>$/g, '');
+    return '<p>' + cleaned + '</p>';
+  });
+
+  // 恢复代码块
+  html = html.replace(/<!--CODEBLOCK_(\d+)-->/g, (match, id) => {
+    const block = codeBlocks[id];
+    return `<pre data-lang="${block.lang}"><code>${block.code}</code></pre>`;
+  });
+
+  return html;
+}
+
+function escapeCode(code) {
+  return code
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function parseTables(html) {
+  const lines = html.split('\n');
+  const result = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    // 检测表格行: | cell | cell |
+    if (/^\|.*\|$/.test(line.trim()) && i + 1 < lines.length && /^\|[-\s:|]+\|$/.test(lines[i + 1].trim())) {
+      const headerLine = line.trim();
+      const headerCells = headerLine.slice(1, -1).split('|').map(c => c.trim());
+      i += 2; // 跳过表头分隔行
+
+      const rows = [];
+      while (i < lines.length && /^\|.*\|$/.test(lines[i].trim())) {
+        const cells = lines[i].trim().slice(1, -1).split('|').map(c => c.trim());
+        rows.push(cells);
+        i++;
+      }
+
+      let table = '<table><thead><tr>';
+      headerCells.forEach(c => table += `<th>${c}</th>`);
+      table += '</tr></thead><tbody>';
+      rows.forEach(row => {
+        table += '<tr>';
+        row.forEach(c => table += `<td>${c}</td>`);
+        table += '</tr>';
+      });
+      table += '</tbody></table>';
+      result.push(table);
+    } else {
+      result.push(line);
+      i++;
+    }
+  }
+
+  return result.join('\n');
+}
+
+// ===== 功能按钮 =====
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function copyHTML() {
+  const html = document.getElementById('article-preview').innerHTML;
+  const fullHTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #FAF8F5;
+  padding: 40px 20px;
+  -webkit-font-smoothing: antialiased;
+}
+.article {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 64px 40px;
+}
+.article h1 {
+  font-family: 'Newsreader', Georgia, 'Noto Serif SC', serif;
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #1A1A1A;
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+.article h2 {
+  font-family: 'Newsreader', Georgia, 'Noto Serif SC', serif;
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #1A1A1A;
+  margin-top: 64px;
+  margin-bottom: 16px;
+}
+.article h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin-top: 48px;
+  margin-bottom: 8px;
+}
+.article p {
+  font-size: 16px;
+  line-height: 1.85;
+  color: #4A4A4A;
+  margin-bottom: 24px;
+}
+.article blockquote {
+  margin: 32px 0;
+  padding: 16px 24px;
+  border-left: 3px solid #C04A1A;
+  background: rgba(192, 74, 26, 0.06);
+  border-radius: 0 8px 8px 0;
+}
+.article blockquote p {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 17px;
+  font-style: italic;
+  color: #1A1A1A;
+  margin-bottom: 8px;
+}
+.article pre {
+  background: #1E1E1E;
+  border-radius: 10px;
+  padding: 24px;
+  margin: 32px 0;
+  overflow-x: auto;
+}
+.article pre code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  color: #D4D4D4;
+  line-height: 1.65;
+}
+.article code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88em;
+  background: #EBE7E0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.article ul, .article ol {
+  margin: 24px 0;
+  padding-left: 28px;
+}
+.article li {
+  font-size: 16px;
+  line-height: 1.85;
+  color: #4A4A4A;
+  margin-bottom: 8px;
+}
+.article hr {
+  border: none;
+  height: 1px;
+  background: rgba(0,0,0,0.08);
+  margin: 64px auto;
+  width: 60%;
+}
+.article a { color: #C04A1A; text-decoration: none; border-bottom: 1px solid transparent; }
+.article a:hover { border-bottom-color: #C04A1A; }
+.article img { max-width: 100%; height: auto; border-radius: 8px; margin: 32px 0; }
+.article strong { font-weight: 600; color: #1A1A1A; }
+.article table { width: 100%; border-collapse: collapse; margin: 32px 0; font-size: 14px; }
+.article th { text-align: left; padding: 8px 16px; border-bottom: 2px solid rgba(0,0,0,0.08); font-weight: 600; }
+.article td { padding: 8px 16px; border-bottom: 1px solid rgba(0,0,0,0.04); color: #4A4A4A; }
+@media (max-width: 600px) {
+  .article { padding: 40px 24px; }
+  .article h1 { font-size: 28px; }
+  .article h2 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<article class="article">
+${html}
+</article>
+</body>
+</html>`;
+
+  navigator.clipboard.writeText(fullHTML).then(() => {
+    showToast('HTML 已复制到剪贴板！');
+  }).catch(() => {
+    showToast('复制失败，请手动复制');
+  });
+}
+
+function clearAll() {
+  input.value = '';
+  preview.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:var(--space-3xl) 0;">在左侧输入 Markdown，这里将实时预览...</p>';
+}
+
+function loadDemo() {
+  input.value = demoContent;
+  preview.innerHTML = parseMarkdown(demoContent);
+}
+
+// ===== 示例内容 =====
+const demoContent = `# 设计的分寸感：Claude 风格排版的哲学
+
+> 好的排版不是装饰，而是让内容以最自然的姿态呈现。\n> — 设计笔记
+
+## 一、为什么是「克制」
+
+在设计公众号文章时，最常见的错误是**过度设计**。渐变色背景、花哨的边框、无处不在的 emoji —— 这些元素在分散注意力的同时，也在降低内容的可信度。
+
+Claude 的设计哲学可以概括为三个词：
+
+1. **温暖** - 米白色的背景让人联想到纸质书的质感
+2. **克制** - 每个元素都必须 justify 自己的存在
+3. **清晰** - 层级分明，让读者一眼找到重点
+
+## 二、字体即语气
+
+排版中，字体的选择比颜色更能传达气质。
+
+| 场景 | 字体 | 气质 |
+|------|------|------|
+| 大标题 | Newsreader / 思源宋体 | 书卷气、权威感 |
+| 正文 | 系统无衬线 | 现代、易读 |
+| 代码 | JetBrains Mono | 技术感、精确 |
+| 引用 | 宋体斜体 | 沉思、优雅 |
+
+**衬线体做标题 + 无衬线做正文** 的组合，是编辑排版的经典范式。它让标题有「分量」，让正文保持阅读效率。
+
+## 三、留白的数学
+
+留白不是「空着」，而是**节奏**。
+
+~~~css
+/* 行高 */
+line-height: 1.85;  /* 中文比英文需要更多呼吸空间 */
+
+/* 段落间距 */
+margin-bottom: 24px;  /* 足够区分段落，又不至于断裂 */
+
+/* 章节间距 */
+margin-top: 64px;  /* h2 前的大停顿，宣告新段落 */
+~~~
+
+这些数字不是随意定的。1.85 的行高让中文字符之间有恰到好处的空隙；64px 的章节间距让文章在视觉上形成「章节」的概念。
+
+## 四、代码的尊严
+
+代码块不是「把文字变成等宽字体」那么简单。
+
+一个真正尊重代码的排版，应该：
+
+- [x] 深色背景，与正文形成材质区分
+- [x] 语法高亮，但配色克制（不刺眼）
+- [x] 合适的字号（13.5px 左右）和行高
+- [ ] 横向滚动，而不是换行破坏结构
+
+~~~javascript
+// 示例：一个简洁的函数
+function measureText(text, options = {}) {
+  const {
+    fontSize = 16,
+    lineHeight = 1.85,
+    maxWidth = 680
+  } = options;
+
+  // 计算需要多少行
+  const charsPerLine = Math.floor(maxWidth / (fontSize * 0.6));
+  const lines = Math.ceil(text.length / charsPerLine);
+
+  return {
+    lines,
+    height: lines * fontSize * lineHeight
+  };
+}
+~~~
+
+## 五、写在最后
+
+好的排版工具应该**隐形**。它不抢内容的风头，只是 quietly 把每一行文字放到最合适的位置。
+
+如果你认同这个理念，这个工具就是为你做的。
+
+---
+
+*用 Claude 排版，让内容回归内容本身。*`;
+
+// 初始化
+input.value = demoContent;
+preview.innerHTML = parseMarkdown(demoContent);
+</script>
+
+</body>
+</html>
