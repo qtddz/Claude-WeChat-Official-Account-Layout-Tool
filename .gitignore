@@ -1,0 +1,15 @@
+.DS_Store
+.claude/
+*.backup
+*.html.backup
+.vscode/
+node_modules/
+# 本地开发文件（不上传到 GitHub）
+AGENTS.md
+CLAUDE.md
+Claude排版工具.html
+implementation_plan.md
+LICENSE
+lint.js
+task.md
+screenshot_*.png
