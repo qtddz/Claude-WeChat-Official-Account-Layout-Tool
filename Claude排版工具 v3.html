@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 /* ===== Design System =====
-   v3 全面升级：主题系统 + Tweaks 调参 + 微信组件库 + 草稿箱 + 海报生成器
+   v3.1 全面升级：主题系统 + Tweaks 调参 + 微信组件库 + 草稿箱 + 海报生成器 + 图片本地上传
    核心理念：温暖克制、内容优先、衬线标题配无衬线正文
 */
 
@@ -2816,6 +2816,7 @@ body.fullscreen-preview .exit-fullscreen {
 
 <!-- 隐藏的文件输入 -->
 <input type="file" class="hidden-input" id="file-input" accept=".md,.markdown,.txt" onchange="handleFileImport(event)">
+<input type="file" class="hidden-input" id="image-file-input" accept="image/*" multiple onchange="handleImageFileSelect(event)">
 
 <script>
 // ===== 本地图片存储管理器 =====
@@ -3444,8 +3445,8 @@ function insertComponent(type) {
 }
 
 // ===== 草稿箱管理 (Draft Manager) =====
-const DRAFTS_KEY = 'claude-paiban-v3-drafts';
-const CURRENT_DRAFT_KEY = 'claude-paiban-v3-current';
+const DRAFTS_KEY = 'claude-paiban-v3-1-drafts';
+const CURRENT_DRAFT_KEY = 'claude-paiban-v3-1-current';
 let currentDraftId = null;
 let isDraftsDrawerOpen = false;
 let autoSaveInterval = null;
@@ -3749,7 +3750,7 @@ function exportAllDrafts() {
   }
 
   const exportData = {
-    version: 'v3',
+    version: 'v3.1',
     exportedAt: Date.now(),
     drafts: drafts
   };
@@ -5063,6 +5064,47 @@ function handleFileImport(event) {
   event.target.value = '';
 }
 
+function handleImageFileSelect(event) {
+  const files = event.target.files;
+  if (files.length === 0) return;
+
+  const textarea = document.getElementById('markdown-input');
+  const cursorPos = textarea.selectionStart;
+
+  Array.from(files).forEach((file, index) => {
+    if (!file.type.startsWith('image/')) return;
+
+    const imgId = ImageStore.store(file);
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
+
+    const markdownImage = `![${fileName}](img://${imgId})`;
+
+    const currentValue = textarea.value;
+    const before = currentValue.substring(0, cursorPos);
+    const after = currentValue.substring(cursorPos);
+
+    const prefix = (before.length > 0 && !before.endsWith('\n')) ? '\n\n' : '';
+    const suffix = (after.length > 0 && !after.startsWith('\n')) ? '\n\n' : '';
+
+    textarea.value = before + prefix + markdownImage + suffix + after;
+
+    const newPos = before.length + prefix.length + markdownImage.length;
+    textarea.setSelectionRange(newPos, newPos);
+    textarea.focus();
+
+    textarea.dispatchEvent(new Event('input'));
+  });
+
+  const imageCount = Array.from(files).filter(f => f.type.startsWith('image/')).length;
+  if (imageCount > 1) {
+    showToast(`${imageCount} 张图片已批量插入 ✨`);
+  } else if (imageCount === 1) {
+    showToast(`图片已插入 ✨`);
+  }
+
+  event.target.value = '';
+}
+
 function exportMarkdown() {
   const content = input.value;
   if (!content.trim()) {
@@ -5440,14 +5482,8 @@ function insertMarkdown(type) {
       }
       break;
     case 'image':
-      wrapBefore = '![';
-      wrapAfter = '](https://)';
-      defaultText = selectedText || '图片描述';
-      if (!selectedText) {
-        selectOffsetStart = wrapBefore.length + defaultText.length + 2;
-        selectOffsetEnd = selectOffsetStart + 8;
-      }
-      break;
+      document.getElementById('image-file-input').click();
+      return;
     case 'table':
       wrapBefore = before.endsWith('\n') || before === '' ? '' : '\n';
       wrapAfter = '\n| 表头1 | 表头2 |\n| --- | --- |\n| 内容1 | 内容2 |\n';

@@ -1,5 +1,22 @@
 # 修改记录
 
+## 2026-06-01
+
+### 5. 图片本地上传（含批量上传）
+- **问题**：工具栏 🖼️ 按钮仅插入 `![描述](https://)` 文本模板，用户需手动填写 URL，无法直接从本地选择图片
+- **解决方案**：
+  - 新增隐藏的图片文件选择器（`<input type="file" accept="image/*" multiple>`）
+  - 点击工具栏 🖼️ 按钮直接弹出系统文件选择器
+  - 选中图片后自动存入 `ImageStore`（Blob URL + 短 ID），在光标处插入 `![文件名](img://xxx)` 引用
+  - **批量上传**：文件选择器支持多选，一次可批量插入多张图片
+  - 与现有拖拽上传共用同一套 `ImageStore` 存储和 `resolveMarkdown` 预览机制
+
+### 文件变更
+- `Claude排版工具 v3.html`：新增 `image-file-input` 元素、`handleImageFileSelect()` 函数，修改 `insertMarkdown('image')` 行为
+- `CHANGELOG.md`：更新修改记录，版本号升级至 v3.1
+
+---
+
 ## 2026-05-29
 
 ### 1. 快捷格式化工具栏 Tooltip 优化
