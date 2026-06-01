@@ -7,8 +7,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const TARGET_FILE = path.join(__dirname, 'Claude排版工具 v3.html');
-const BACKUP_FILE = path.join(__dirname, 'Claude排版工具 v3.html.backup');
+const TARGET_FILE = path.join(__dirname, 'index.html');
+const BACKUP_FILE = path.join(__dirname, 'index.html.backup');
 
 // 审查规则
 const RULES = {
